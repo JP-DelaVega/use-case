@@ -3,3 +3,6 @@ Dela Vega, John Philip
 Guardian, Dave Joshua
 Manangu, Denzel Florentino
 Vergara, Cuthbert Kyle
+
+
+This application calculates the academic average of inputted grades.
