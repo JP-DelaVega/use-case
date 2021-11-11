@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Midterm Major Exam</title>
+    <link rel="stylesheet" href="./style.css">
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+</head>
+
+<body>
+    <div class="container" id="container">
+        <header>
+            <h3>Score List</h3>
+        </header>
+        <div class="table-wrapper">
+            <table class="table-users" id="Score_table">
+            </table>
+            <button class="btn btn-add">Add Score</button>
+            <button class="btn btn-compute">Average</button>
+        </div>
+        <div class="add-modal modal-wrapper">
+            <div class="modal">
+                <div class="modal-header">
+                    <h3>Add New Score</h3>
+                </div>
+                <div class="modal-body">
+                    <form class="form" autocomplete="off">
+                        <select name="scoreName" id="scoreName">
+                            <option value="Major_Exam">Major Exam (40%)</option>
+                            <option value="Quiz">Quiz (20%)</option>
+                            <option value="Activity">Activity (15%)</option>
+                            <option value="Assignment">Assignment (10%)</option>
+                            <option value="Recitataion">Recitataion (5%)</option>
+                        </select>
+                        <input type="text" name="percent" id="percent" placeholder="Name">
+                        <input type="number" name="score" id="score" placeholder="Score">
+                        <input type="number" name="total" id="total" placeholder="Total">
+                        <button class="btn btn-modal-add">Add</button>
+                        <button class="btn btn-modal-canceladd">Cancel</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="edit-modal modal-wrapper">
+            <div class="modal">
+                <div class="modal-header">
+                    <h3>Edit Score</h3>
+                </div>
+                <div class="modal-body">
+                    <form class="form" autocomplete="off">
+                        <input type="text" name="editname" id="editname" placeholder="Name">
+                        <input type="number" name="editscore" id="editscore" placeholder="Score">
+                        <input type="number" name="edittotal" id="edittotal" placeholder="Total">
+                        <button class="btn btn-modal-edit">Edit</button>
+                        <button class="btn btn-modal-canceledit">Cancel</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="compute-modal modal-wrapper">
+            <div class="modal">
+                <div class="modal-header">
+                    <h3>Computed Average is</h3><br>
+                    <label id="score_label"></label>
+                </div>
+                <div class="modal-body">
+                    <form class="form">
+                        <button class="btn btn-modal-compute">OK</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        // Import the functions you need from the SDKs you need
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.2/firebase-app.js";
+        import { getDatabase, ref, set, get, child, onValue } from "https://www.gstatic.com/firebasejs/9.1.2/firebase-database.js";
+        // TODO: Add SDKs for Firebase products that you want to use
+        // https://firebase.google.com/docs/web/setup#available-libraries
+
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBbbilKR4hRT9M4pHK1EihN_a_n8rbC5BE",
+            authDomain: "use-case-db-464cb.firebaseapp.com",
+            databaseURL: "https://use-case-db-464cb-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "use-case-db-464cb",
+            storageBucket: "use-case-db-464cb.appspot.com",
+            messagingSenderId: "909205497421",
+            appId: "1:909205497421:web:a413805c2968dd3d8dde04"
+        };
+        const Score_table = document.getElementById("Score_table");
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+
+        const main_container = document.getElementById("container")
+
+        const btnAdd = document.querySelector(".btn-add");
+
+        const addModal = document.querySelector(".add-modal");
+        const editModal = document.querySelector(".edit-modal");
+
+        const addScore = document.querySelector(".btn-modal-add");
+
+        const ScoreName = document.getElementById("scoreName");
+        const epNum = document.getElementById("score");
+        const sNum = document.getElementById("total");
+        const percent_score = document.getElementById("percent");
+
+        const cancel_eventadd = document.querySelector(".btn-modal-canceladd");
+
+        cancel_eventadd.addEventListener("click", e => {
+            e.preventDefault();
+            addModal.classList.remove("modal-show");
+        })
+
+        const cancel_eventedit = document.querySelector(".btn-modal-canceledit");
+
+        cancel_eventedit.addEventListener("click", e => {
+            e.preventDefault();
+            editModal.classList.remove("modal-show");
+        })
+
+        btnAdd.addEventListener("click", () => {
+            addModal.classList.add("modal-show");
+        });
+
+        addScore.addEventListener("click", (e) => {
+            e.preventDefault();
+            axios({
+                method: "post",
+                url: "/save",
+                data: {
+                    score_source: ScoreName.value,
+                    score: epNum.value,
+                    total: sNum.value,
+                    name: percent_score.value,
+                },
+            });
+            epNum.value = "";
+            sNum.value = "";
+            percent_score.value = "";
+
+            addModal.classList.remove("modal-show");
+        });
+
+        const db = getDatabase();
+        const ScoreRef = ref(db, 'Score/');
+        onValue(ScoreRef, (snapshot) => {
+            Score_table.innerHTML = "";
+            const tr =
+                `<tr>
+                <th>Score Source</th>
+                <th>Score</th>
+                <th>Total</th>
+                <th></th>
+                <th>Actions</th>
+                <th></th>
+            </tr>`;
+            Score_table.insertAdjacentHTML('beforeend', tr);
+            for (const [key, value] of Object.entries(snapshot.val())) {
+                for (const [keys, values] of Object.entries(value)) {
+                    const tr = `<tr>
+                                    <th>${values.name}</th>
+                                    <th>${values.score}</th>
+                                    <th>${values.total}</th>
+                                    <th>${key}</th>
+                                    <th><button class = "btn btn-edit-table-${keys}">Edit</button></th>
+                                    <th><button class = "btn btn-delete-table-${keys}">Delete</button></th>
+                                </tr>`;
+                    Score_table.insertAdjacentHTML('beforeend', tr);
+                    const table_delete = document.querySelector(`.btn-delete-table-${keys}`);
+                    const table_edit = document.querySelector(`.btn-edit-table-${keys}`);
+
+                    table_delete.addEventListener("click", () => {
+                        axios({
+                            method: "delete",
+                            url: "/remove",
+                            data: {
+                                score_name: keys,
+                                score_source: key
+                            },
+                        });
+                    });
+                    table_edit.addEventListener("click", () => {
+                        editModal.classList.add("modal-show");
+                        const edit_confirm = document.querySelector(".btn-modal-edit");
+
+                        const editName = document.getElementById("editname");
+                        const editScore = document.getElementById("editscore");
+                        const editTotal = document.getElementById("edittotal");
+
+                        editName.value = values.name;
+                        editScore.value = values.score;
+                        editTotal.value = values.total;
+
+                        edit_confirm.addEventListener("click", e => {
+                            e.preventDefault();
+                            axios({
+                                method: "put",
+                                url: "/update",
+                                data: {
+                                    key: key,
+                                    keys: keys,
+                                    part_change: editScore.value,
+                                    new_val: editTotal.value,
+                                    score_name: editName.value
+                                },
+                            });
+                            editModal.classList.remove("modal-show");
+                        })
+
+                    });
+                }
+            }
+
+        });
+
+
+        const computeModal = document.querySelector(".compute-modal");
+        const btncompute = document.querySelector(".btn-compute");
+        const dbRef = ref(getDatabase());
+        var score = document.getElementById("score_label")
+        const computeScore = document.querySelector(".btn-modal-compute");
+
+        score.innerHTML = "sad";
+
+        btncompute.addEventListener("click", () => {
+            computeModal.classList.add("modal-show");
+            var major = 0;
+            var quiz = 0;
+            var activity = 0;
+            var assignment = 0;
+            var recitation = 0;
+            var majorS = 0;
+            var quizS = 0;
+            var activityS = 0;
+            var assignmentS = 0;
+            var recitationS = 0;
+            var majorT = 0;
+            var quizT = 0;
+            var activityT = 0;
+            var assignmentT = 0;
+            var recitationT = 0;
+            var total = 0
+            get(child(dbRef, "Score/")).then((snapshot) => {
+                if (snapshot.exists()) {
+                    for (const [key, value] of Object.entries(snapshot.val())) {
+                        for (const [keys, values] of Object.entries(value)) {
+
+                            if (key == "Major_Exam") {
+                                majorS = majorS + parseFloat(values.score);
+                                majorT = majorT + parseFloat(values.total);
+                            } else if (key == "Quiz") {
+                                quizS = quizS + parseFloat(values.score);
+                                quizT = quizT + parseFloat(values.total);
+                            } else if (key == "Activity") {
+                                activityS = activityS + parseFloat(values.score);
+                                activityT = activityT + parseFloat(values.total);
+                            } else if (key == "Assignment") {
+                                assignmentS = assignmentS + parseFloat(values.score);
+                                assignmentT = assignmentT + parseFloat(values.total);
+                            } else if (key == "Recitataion") {
+                                recitationS = recitationS + parseFloat(values.score);
+                                recitationT = recitationT + parseFloat(values.total);
+                            }
+                        }
+
+                    }
+                }
+                major = majorS / majorT * .4 * 100;
+                major = major.toFixed(2);
+
+                quiz = quizS / quizT * .2 * 100;
+                quiz = quiz.toFixed(2);
+
+                activity = activityS / activityT * .15 * 100;
+                activity = activity.toFixed(2);
+
+                assignment = assignmentS / assignmentT * .1 * 100;
+                assignment = assignment.toFixed(2);
+
+                recitation = recitationS / recitationT * .05 * 100;
+                recitation = recitation.toFixed(2);
+
+                total = parseFloat(major) + parseFloat(activity) + parseFloat(assignment) + parseFloat(quiz) + parseFloat(recitation);
+
+                console.log(majorS);
+                score.innerHTML = `Major Exam (40%) = ${majorS} / ${majorT} * .4 = ${major} <br>
+                                   Quiz (20%) = ${quizS} / ${quizT} * .2 = ${quiz} <br>
+                                   Activity (15%) = ${activityS} / ${activityT} * .15 = ${activity} <br>
+                                   Assigment (10%) = ${assignmentS} / ${assignmentT} * .1 = ${assignment} <br>
+                                   Recitation (5%) = ${recitationS} / ${recitationT} * .05 = ${recitation} <br><br>
+                                   Grade = ${major} + ${quiz} + ${activity} + ${assignment} + ${recitation} <br>
+                                   Grade = ${total}
+                `;
+            }).catch((error) => {
+                console.error(error);
+            });
+        });
+
+        computeScore.addEventListener("click", (e) => {
+            e.preventDefault();
+            computeModal.classList.remove("modal-show");
+        })
+    </script>
+</body>
+
+</html>
